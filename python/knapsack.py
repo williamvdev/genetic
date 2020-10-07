@@ -35,7 +35,7 @@ def select_by_tournament(candidates, treasures):
     """
     candidate_a = candidates[randint(0, len(candidates) - 1)]
     candidate_b = candidates[randint(0, len(candidates) - 1)]
-    return candidate_a if solution_fitness(treasures, candidate_a) > solution_fitness(treasures, candidate_b) else candidate_b
+    return candidate_a if candidate_a['fitness'] > candidate_b['fitness'] else candidate_b
 
 def solution_fitness(treasures, solution):
     """
@@ -51,12 +51,13 @@ def solution_fitness(treasures, solution):
             return 0
     return total_value
 
-def get_child(parent_a, parent_b):
-    child = []
-    for i in range(len(parent_a)):
-        child_bit = parent_a[i] if random() < INHERITANCE_FACTOR else parent_b[i]
+def get_child(treasures, parent_a, parent_b):
+    child = {'solution': []}
+    for i in range(len(parent_a['solution'])):
+        child_bit = parent_a['solution'][i] if random() < INHERITANCE_FACTOR else parent_b['solution'][i]
         child_bit = not child_bit if random() < MUTATION_FACTOR else child_bit
-        child.append(child_bit)
+        child['solution'].append(child_bit)
+    child['fitness'] = solution_fitness(treasures, child['solution'])
     return child
 
 def generate_random_solution(size):
@@ -69,19 +70,21 @@ def generate_random_solution(size):
 def get_generation(treasures, parent_generation, population_size):
     new_gen = []
     while len(new_gen) < population_size:
+        
         if(len(parent_generation) == 0):
-            new_gen.append(generate_random_solution(len(treasures)))
+            random_solution = generate_random_solution(len(treasures))
+            new_gen.append({ 'solution': random_solution, 'fitness': solution_fitness(treasures, random_solution)})
         else:
             parent_a = select_by_tournament(parent_generation, treasures)
             parent_b = select_by_tournament(parent_generation, treasures)
-            new_gen.append(get_child(parent_a, parent_b))
+            new_gen.append(get_child(treasures, parent_a, parent_b))
     return new_gen
 
 def get_generation_stats(treasures, generation):
     stats = {}
     total_score = 0
-    for solution in generation:
-        score = solution_fitness(treasures, solution)
+    for member in generation:
+        score = member['fitness']
         total_score += score
         if 'min' not in stats: stats['min'] = score
         if 'max' not in stats: stats['max'] = score
